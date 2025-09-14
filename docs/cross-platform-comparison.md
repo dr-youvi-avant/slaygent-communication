@@ -11,10 +11,10 @@ Detailed comparison of Slaygent Communication System features across Windows, Li
 | File-based Fallback | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
 | Process Discovery | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
 | **Audio System** |
-| Sounddevice Backend | ✅ Primary | ✅ Primary | ✅ Fallback | ✅ Fallback | ✅ Primary | ✅ Primary |
-| PulseAudio Backend | ❌ N/A | ❌ N/A | ✅ Primary | ✅ Primary | ❌ N/A | ❌ N/A |
-| CoreAudio Backend | ❌ N/A | ❌ N/A | ❌ N/A | ❌ N/A | ✅ Future | ✅ Future |
-| WASAPI Integration | ✅ Auto | ✅ Auto | ❌ N/A | ❌ N/A | ❌ N/A | ❌ N/A |
+| Sounddevice Backend | ✅ Fallback | ✅ Fallback | ✅ Fallback | ✅ Fallback | ✅ Fallback | ✅ Fallback |
+| PulseAudio Backend | ✅ Equivalent (WASAPI) | ✅ Equivalent (WASAPI) | ✅ Primary | ✅ Primary | ✅ Equivalent (CoreAudio) | ✅ Equivalent (CoreAudio) |
+| CoreAudio Backend | ✅ Equivalent (WASAPI) | ✅ Equivalent (WASAPI) | ✅ Equivalent (PulseAudio) | ✅ Equivalent (PulseAudio) | ✅ Native | ✅ Native |
+| WASAPI Integration | ✅ Native | ✅ Native | ✅ Equivalent (PulseAudio) | ✅ Equivalent (PulseAudio) | ✅ Equivalent (CoreAudio) | ✅ Equivalent (CoreAudio) |
 | **TTS Voices** |
 | Piper Neural Voices | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
 | System TTS | ✅ SAPI | ✅ SAPI | ✅ espeak/festival | ✅ espeak/festival | ✅ say | ✅ say |

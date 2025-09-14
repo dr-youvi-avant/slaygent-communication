@@ -64,30 +64,38 @@ class AudioManager:
     def _get_auto_backend(self) -> str:
         """Determine best backend automatically based on OS"""
         if self.os_detector.is_windows:
-            return "sounddevice"
+            # Windows: Try native WASAPI first, fallback to sounddevice
+            return "windows_native"
         elif self.os_detector.is_linux:
-            # Prefer PulseAudio on Linux, fallback to sounddevice
+            # Linux: PulseAudio > JACK > ALSA Low-Latency > sounddevice
             return "pulse"
         elif self.os_detector.is_macos:
-            return "sounddevice"  # CoreAudio via sounddevice
+            # macOS: CoreAudio native > JACK > sounddevice
+            return "coreaudio_native"
         else:
             return "sounddevice"  # Universal fallback
     
     def _get_fallback_order(self, preferred: str) -> List[str]:
         """Get fallback order for backend selection"""
-        all_backends = ["sounddevice", "pulse", "none"]
+        # Define all possible backends
+        all_backends = ["windows_native", "coreaudio_native", "pulse", "jack_audio", "alsa_low_latency", "sounddevice", "none"]
         
-        # Remove preferred from list and put it first
+        # Remove preferred from list
         if preferred in all_backends:
             all_backends.remove(preferred)
         
-        # Filter by OS availability
+        # Filter by OS availability and set priority order
         available_backends = []
         
         if self.os_detector.is_linux:
-            available_backends = ["sounddevice", "pulse", "none"]
-        elif self.os_detector.is_windows or self.os_detector.is_macos:
-            available_backends = ["sounddevice", "none"]
+            # Linux: PulseAudio > JACK > ALSA LL > sounddevice > none
+            available_backends = ["pulse", "jack_audio", "alsa_low_latency", "sounddevice", "none"]
+        elif self.os_detector.is_windows:
+            # Windows: Native WASAPI > sounddevice > none
+            available_backends = ["windows_native", "sounddevice", "none"]
+        elif self.os_detector.is_macos:
+            # macOS: CoreAudio > JACK > sounddevice > none
+            available_backends = ["coreaudio_native", "jack_audio", "sounddevice", "none"]
         else:
             available_backends = ["sounddevice", "none"]
         
@@ -101,6 +109,14 @@ class AudioManager:
                 return await self._init_sounddevice()
             elif backend_name == "pulse":
                 return await self._init_pulseaudio()
+            elif backend_name == "windows_native":
+                return await self._init_windows_native()
+            elif backend_name == "coreaudio_native":
+                return await self._init_coreaudio_native()
+            elif backend_name == "jack_audio":
+                return await self._init_jack_audio()
+            elif backend_name == "alsa_low_latency":
+                return await self._init_alsa_low_latency()
             elif backend_name == "none":
                 return await self._init_none_backend()
             else:
@@ -157,6 +173,94 @@ class AudioManager:
             logger.debug("PulseAudio backend not available (import error)")
         except Exception as e:
             logger.debug(f"PulseAudio initialization failed: {e}")
+        
+        return False
+    
+    async def _init_windows_native(self) -> bool:
+        """Initialize Windows Native WASAPI backend (Windows only)"""
+        if not self.os_detector.is_windows:
+            return False
+        
+        try:
+            from .windows_native_backend import WindowsNativeBackend
+            
+            backend = WindowsNativeBackend()
+            if await backend.initialize({}):
+                self.active_backend = backend
+                self.backend_name = "windows_native"
+                self.is_initialized = True
+                return True
+            
+        except ImportError:
+            logger.debug("Windows native backend not available (import error)")
+        except Exception as e:
+            logger.debug(f"Windows native initialization failed: {e}")
+        
+        return False
+    
+    async def _init_coreaudio_native(self) -> bool:
+        """Initialize CoreAudio native backend (macOS only)"""
+        if not self.os_detector.is_macos:
+            return False
+        
+        try:
+            from .coreaudio_backend import CoreAudioBackend
+            
+            backend = CoreAudioBackend()
+            if await backend.initialize({}):
+                self.active_backend = backend
+                self.backend_name = "coreaudio_native"
+                self.is_initialized = True
+                return True
+            
+        except ImportError:
+            logger.debug("CoreAudio native backend not available (import error)")
+        except Exception as e:
+            logger.debug(f"CoreAudio native initialization failed: {e}")
+        
+        return False
+    
+    async def _init_jack_audio(self) -> bool:
+        """Initialize JACK Audio backend (Linux/macOS professional audio)"""
+        if self.os_detector.is_windows:
+            return False  # JACK typically not used on Windows
+        
+        try:
+            from .low_latency_backends import JackAudioBackend
+            
+            backend = JackAudioBackend()
+            if await backend.initialize({}):
+                self.active_backend = backend
+                self.backend_name = "jack_audio"
+                self.is_initialized = True
+                return True
+            
+        except ImportError:
+            logger.debug("JACK Audio backend not available (import error)")
+        except Exception as e:
+            logger.debug(f"JACK Audio initialization failed: {e}")
+        
+        return False
+    
+    async def _init_alsa_low_latency(self) -> bool:
+        """Initialize ALSA Low-Latency backend (Linux only)"""
+        if not self.os_detector.is_linux:
+            return False
+        
+        try:
+            from .low_latency_backends import ALSALowLatencyBackend
+            
+            backend = ALSALowLatencyBackend()
+            if await backend.initialize({}):
+                self.active_backend = backend
+                self.backend_name = "alsa_low_latency"
+                self.is_initialized = True
+                return True
+            
+        except ImportError:
+            logger.debug("ALSA Low-Latency backend not available (import error)")
+        except Exception as e:
+            logger.debug(f"ALSA Low-Latency initialization failed: {e}")
         
         return False
     
