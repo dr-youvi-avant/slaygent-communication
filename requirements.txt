@@ -1,14 +1,42 @@
 # AI Agent Communication System - Python Dependencies
+# Cross-platform Windows port with Redis messaging and enhanced audio
 # Install with: pip install -r requirements.txt
 
-# Web framework for TTS server
+# Core Framework
 fastapi>=0.104.0
-
-# ASGI server for FastAPI
 uvicorn[standard]>=0.24.0
 
 # Neural TTS engine
 piper-tts>=1.2.0
 
-# Optional: For better JSON handling in scripts
-# jq is used by some scripts but is a system dependency, not Python
+# Cross-platform Audio Support
+sounddevice>=0.4.6  # Windows/macOS/Linux audio backend
+soundfile>=0.12.1   # Audio file I/O support
+numpy>=1.24.0       # Audio processing
+
+# Redis Messaging System (replaces tmux dependency)
+redis>=4.5.0
+hiredis>=2.2.3      # High-performance Redis parser
+
+# Configuration Management
+pyyaml>=6.0         # YAML config file support
+python-dotenv>=1.0.0 # .env file loading
+pydantic>=2.0.0     # Configuration validation
+
+# Cross-platform Process Management
+psutil>=5.9.0       # Cross-platform process and system utilities
+
+# Development and Testing
+pytest>=7.4.0       # Testing framework
+pytest-asyncio>=0.21.0 # Async testing support
+requests>=2.31.0    # HTTP client for testing
+
+# Optional: Enhanced CLI experience
+rich>=13.0.0        # Rich terminal output
+typer>=0.9.0        # CLI framework
+click>=8.1.0        # Command-line interface creation
+
+# Windows-specific audio enhancement (installed conditionally)
+# pywin32>=306; sys_platform == "win32"  # Windows API access
+
+# Note: jq is used by bash scripts but is a system dependency, not Python

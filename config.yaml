@@ -1,0 +1,52 @@
+# Slaygent Communication System - Cross-Platform Configuration
+# This configuration supports Windows 11, Linux, and macOS
+
+# Environment settings
+environment: development
+debug: false
+
+# TTS Server Configuration
+tts_server:
+  host: "127.0.0.1"
+  port: 9003
+  workers: 1
+
+# Agent Discovery Server Configuration  
+discovery_server:
+  host: "127.0.0.1"
+  port: 9005
+  workers: 1
+
+# Redis Messaging Configuration (replaces tmux)
+redis:
+  host: "127.0.0.1"      # Will auto-detect Clacky Redis if available
+  port: 6379
+  password: null          # Will use REDISCLI_AUTH if available
+  db: 0
+  enabled: true          # Set to false to disable Redis (uses fallback messaging)
+
+# Cross-platform Audio Configuration
+audio:
+  backend: "auto"        # auto, sounddevice, pulse, alsa, none
+  device_id: null        # null = default audio device
+  sample_rate: 22050
+  channels: 1
+
+# Voice Model Configuration
+voice:
+  default_voice: "amy"
+  voice_dir: "voices"
+  auto_download: true    # Automatically download missing voice models
+  models:
+    amy: "en_US-amy-medium.onnx"
+    danny: "en_US-danny-low.onnx"
+    kathleen: "en_US-kathleen-low.onnx"
+    libritts: "en_US-libritts-high.onnx"
+    lessac: "en_US-lessac-medium.onnx"
+    ryan: "en_US-ryan-medium.onnx"
+
+# Agent Discovery Configuration
+agent:
+  discovery_port: 9005
+  refresh_interval: 5    # Seconds between agent scans
+  timeout: 30           # Request timeout in seconds

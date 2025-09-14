@@ -1,61 +1,65 @@
 #!/bin/bash
-# AI Agent Communication - Agent Discovery Tool
-# Shows all active AI agent instances detected by the discovery server
+# Slaygent Communication System - Cross-platform Agent Discovery Tool
+# Enhanced Bash wrapper for Python-based agent discovery
 
 # Configuration - make this portable
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PYTHON_SCRIPT="$SCRIPT_DIR/search-agents.py"
 
-# Default discovery server configuration
-DISCOVERY_HOST="${DISCOVERY_HOST:-localhost}"
-DISCOVERY_PORT="${DISCOVERY_PORT:-9005}"
-DISCOVERY_URL="${DISCOVERY_URL:-http://$DISCOVERY_HOST:$DISCOVERY_PORT}"
-
-# Check if discovery server is running
-if ! curl -s --max-time 2 "$DISCOVERY_URL/health" > /dev/null 2>&1; then
-    echo "❌ Agent discovery server not responding at $DISCOVERY_URL"
-    echo ""
-    echo "To start the discovery server:"
-    echo "  python $PROJECT_DIR/agent_discovery.py"
-    echo ""
-    echo "Or set environment variables:"
-    echo "  DISCOVERY_HOST - Server hostname (default: localhost)"
-    echo "  DISCOVERY_PORT - Server port (default: 9005)"
-    echo "  DISCOVERY_URL  - Full server URL (overrides HOST/PORT)"
+# Check if Python script exists
+if [ ! -f "$PYTHON_SCRIPT" ]; then
+    echo "❌ Error: Python script not found at $PYTHON_SCRIPT"
+    echo "Make sure you're in the Slaygent Communication System directory"
     exit 1
 fi
 
-# Fetch agent data
-response=$(curl -s "$DISCOVERY_URL/agents" 2>/dev/null)
-
-if [ $? -ne 0 ] || [ -z "$response" ]; then
-    echo "❌ Failed to fetch agent data from $DISCOVERY_URL"
-    exit 1
+# Show help if --help requested
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "Slaygent Communication System - Agent Discovery Tool"
+    echo ""
+    echo "Usage:"
+    echo "  search-agents                Discover agents using server"
+    echo "  search-agents --fresh        Force fresh scan"
+    echo "  search-agents --direct       Use direct discovery"
+    echo "  search-agents --verbose      Show detailed information"
+    echo "  search-agents --statistics   Show discovery statistics"
+    echo "  search-agents --status       Show server status"
+    echo ""
+    echo "Options:"
+    echo "  --format <table|json>        Output format"
+    echo "  --host <hostname>            Discovery server host"
+    echo "  --port <port>                Discovery server port"
+    echo "  --quiet                      Suppress output"
+    echo ""
+    echo "Examples:"
+    echo "  search-agents"
+    echo "  search-agents --verbose --fresh"
+    echo "  search-agents --format json"
+    echo "  search-agents --statistics"
+    echo ""
+    exit 0
 fi
 
-# Parse and display results
-echo "🔍 AI Agent Discovery Results"
-echo "📡 Server: $DISCOVERY_URL"
-echo ""
+# Try different Python executables in order of preference
+PYTHON_EXES=("python3" "python" "py")
+PYTHON_CMD=""
 
-# Check if we have jq for pretty formatting
-if command -v jq >/dev/null 2>&1; then
-    # Use jq for nice formatting
-    agent_count=$(echo "$response" | jq -r '.agents | length')
-    if [ "$agent_count" -eq 0 ]; then
-        echo "📭 No active AI agents detected"
-        echo ""
-        echo "Make sure you have:"
-        echo "  • tmux sessions running"
-        echo "  • AI agents (claude, opencode, etc.) active in panes"
-    else
-        echo "$response" | jq -r '.agents | to_entries[] | "🤖 \(.key):", (.value[] | "   • \(.pane) in \(.path)"), ""'
+for python_exe in "${PYTHON_EXES[@]}"; do
+    if command -v "$python_exe" >/dev/null 2>&1; then
+        # Test if it's Python 3
+        if "$python_exe" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" 2>/dev/null; then
+            PYTHON_CMD="$python_exe"
+            break
+        fi
     fi
-else
-    # Fallback without jq
-    echo "Raw response (install jq for better formatting):"
-    echo "$response"
+done
+
+if [ -z "$PYTHON_CMD" ]; then
+    echo "❌ Error: Python 3.8+ not found"
+    echo "Please install Python 3.8 or later and ensure it's in your PATH"
+    exit 1
 fi
 
-echo ""
-echo "💡 Tip: Use 'tmux-message <agent> <path> <message>' to communicate with agents"
+# Execute the Python script with all arguments
+exec "$PYTHON_CMD" "$PYTHON_SCRIPT" "$@"

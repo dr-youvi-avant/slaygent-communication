@@ -1,64 +1,56 @@
 #!/bin/bash
-# AI Agent Communication - Easy Messaging Tool
-# Usage: msg <agent> <message>
-# Example: msg claude "hello" or msg opencode "what's up"
+# Slaygent Communication System - Cross-platform Messaging Tool
+# Enhanced Bash wrapper for Python-based messaging system
 
 # Configuration - make this portable
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-TMUX_MESSAGE_SCRIPT="$PROJECT_DIR/tmux_message.py"
+PYTHON_SCRIPT="$SCRIPT_DIR/msg.py"
 
-# Default discovery server configuration
-DISCOVERY_HOST="${DISCOVERY_HOST:-localhost}"
-DISCOVERY_PORT="${DISCOVERY_PORT:-9005}"
-DISCOVERY_URL="${DISCOVERY_URL:-http://$DISCOVERY_HOST:$DISCOVERY_PORT}"
+# Check if Python script exists
+if [ ! -f "$PYTHON_SCRIPT" ]; then
+    echo "❌ Error: Python script not found at $PYTHON_SCRIPT"
+    echo "Make sure you're in the Slaygent Communication System directory"
+    exit 1
+fi
 
-if [[ $# -lt 2 ]]; then
-    echo "AI Agent Communication - Easy Messaging Tool"
+# Show help if no arguments or --help
+if [ $# -eq 0 ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "Slaygent Communication System - Cross-platform Messaging Tool"
     echo ""
-    echo "Usage: msg <agent> <message>"
+    echo "Usage:"
+    echo "  msg <agent> <message>        Send message to specific agent"
+    echo "  msg --all <message>          Broadcast to all agents"
+    echo "  msg --list                   List available agents"
+    echo "  msg --status                 Show messaging status"
     echo ""
     echo "Examples:"
     echo "  msg claude 'Hello from terminal'"
-    echo "  msg opencode 'Status check'"
-    echo "  msg homelab 'System alert'"
+    echo "  msg --all 'System alert: Build complete'"
+    echo "  msg --list"
     echo ""
-    echo "Available agents:"
-    "$SCRIPT_DIR/search-agents" 2>/dev/null || echo "  (Run search-agents to see available agents)"
+    exit 0
+fi
+
+# Try different Python executables in order of preference
+PYTHON_EXES=("python3" "python" "py")
+PYTHON_CMD=""
+
+for python_exe in "${PYTHON_EXES[@]}"; do
+    if command -v "$python_exe" >/dev/null 2>&1; then
+        # Test if it's Python 3
+        if "$python_exe" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" 2>/dev/null; then
+            PYTHON_CMD="$python_exe"
+            break
+        fi
+    fi
+done
+
+if [ -z "$PYTHON_CMD" ]; then
+    echo "❌ Error: Python 3.8+ not found"
+    echo "Please install Python 3.8 or later and ensure it's in your PATH"
     exit 1
 fi
 
-agent="$1"
-shift
-message="$*"
-
-# Check if tmux_message.py exists
-if [ ! -f "$TMUX_MESSAGE_SCRIPT" ]; then
-    echo "❌ Error: tmux_message.py not found at $TMUX_MESSAGE_SCRIPT"
-    echo "Make sure you're running this from the ai-agent-communication directory"
-    exit 1
-fi
-
-# Check if discovery server is running
-if ! curl -s --max-time 2 "$DISCOVERY_URL/health" > /dev/null 2>&1; then
-    echo "⚠️  Agent discovery server not available at $DISCOVERY_URL"
-    echo "   Attempting to find agent manually..."
-    echo ""
-    # Try to find agent using tmux directly
-    python3 "$TMUX_MESSAGE_SCRIPT" "$agent" "." "$message"
-    exit $?
-fi
-
-# Get first available path for the agent
-agent_info=$(curl -s "$DISCOVERY_URL/agents" 2>/dev/null | jq -r ".agents.$agent[0].path" 2>/dev/null)
-
-if [[ "$agent_info" == "null" || -z "$agent_info" ]]; then
-    echo "❌ Agent '$agent' not found."
-    echo ""
-    echo "Available agents:"
-    "$SCRIPT_DIR/search-agents" 2>/dev/null || echo "  (Could not fetch agent list)"
-    exit 1
-fi
-
-# Send the message
-python3 "$TMUX_MESSAGE_SCRIPT" "$agent" "$agent_info" "$message"
+# Execute the Python script with all arguments
+exec "$PYTHON_CMD" "$PYTHON_SCRIPT" "$@"
